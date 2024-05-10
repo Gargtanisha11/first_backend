@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import jwt from "jsonwebtoken0";
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
@@ -54,7 +54,7 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified(this.password)) {
     retrun;
   }
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });   // code for hashing the password for saving
 

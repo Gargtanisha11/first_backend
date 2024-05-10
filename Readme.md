@@ -21,5 +21,12 @@ step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string )
    Always use async and await because our code is present in other continent
 
 
+step 4 : cloudinary
+
+step 5 : user model and video model
+
+step 6 :controller for user 
+
+
 # related to mongodbatlas 
   if your password have special character in it then you have to change it using percent encoding 

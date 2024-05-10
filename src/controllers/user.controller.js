@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   //logic for register
@@ -33,12 +35,54 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //  User.findOne(email)  is used for check one field at a time
      const existedUser = User.findOne({ $or: [{ email }, { userName }] });
+     console.log(existedUser)
      if (existedUser) {
         throw new ApiError(409, " User already existed ");
      }
- // console.log(existedUser)
+  
    // multer give access for res.files 
-    
+   const avatarLocalPath=req.files?.avatar[0]?.path;
+   console.log(avatarLocalPath);
+   const coverIamgeLocalPath=req.files?.coverImage[0]?.path;
+  
+
+   // check that avatar is uploaded or not 
+   if(!avatar){
+    throw new ApiError(400, "avatar should be uploaded");
+   }
+
+   const avatar= await uploadOnCloudinary(avatarLocalPath);
+   const coverImage=await uploadOnCloudinary(coverIamgeLocalPath)
+   if(!avatar ){
+    throw new ApiError(400," unable to upload on cloudinary");
+   }
+
+
+   // create user in mongoose 
+  const user = await User.create({
+    fullName,
+    avatar:avatar.url,
+    coverIamge:coverImage?.url || "",
+    userName:userName.lowerCase(),
+    email,
+    password,
+   })
+
+   // whenever mongoose  a user register it create an id with it  with the name _ID  you  can access taht id by findById
+   const createdUser =await User.findById(user._id).select(
+     " -password -refreshToken "
+   )
+
+
+   //  check for creation of user
+   if(!createdUser){
+       throw new ApiError(500,"Something went wrong while registering the user  ")  // 500 code because it is server side error 
+   }
+ 
+   return res.status(201).json(
+    new ApiResponse(200,createdUser,"User registered Successfully")
+   )
+
 
 });
 

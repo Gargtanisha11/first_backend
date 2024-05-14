@@ -16,9 +16,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //step 8 - check for user creation
   //step 9 - return res
 
-  res.status(200).json({
-    message: "ok",
-  });
+  
   const { fullName, email, password, userName } = req.body;
   console.log(`this is email of user ${email} \n this is username ${userName}`); // step 1 we take data from user using postman in json format
 
@@ -34,8 +32,8 @@ const registerUser = asyncHandler(async (req, res) => {
   //step3  check if user already existed or not   ( we take user  from user model which have the access of mongoose and we can check any field's existence by using find method )
 
   //  User.findOne(email)  is used for check one field at a time
-     const existedUser = User.findOne({ $or: [{ email }, { userName }] });
-     console.log(existedUser)
+     const existedUser =  await User.findOne({ $or: [{ email }, { userName }] });
+    // console.log(existedUser)
      if (existedUser) {
         throw new ApiError(409, " User already existed ");
      }
@@ -43,16 +41,20 @@ const registerUser = asyncHandler(async (req, res) => {
    // multer give access for res.files 
    const avatarLocalPath=req.files?.avatar[0]?.path;
    console.log(avatarLocalPath);
-   const coverIamgeLocalPath=req.files?.coverImage[0]?.path;
-  
+   //const coverImageLocalPath=req.files?.coverImage[0]?.path;
+   let coverImageLocalPath;
+   if(req.files &&  Array.isArray(req.files.coverImage) && (req.files.coverIamge.length>0))  {
+    coverImageLocalPath=req.files?.coverImage[0]?.path;
+
+    }
 
    // check that avatar is uploaded or not 
-   if(!avatar){
-    throw new ApiError(400, "avatar should be uploaded");
+   if(!avatarLocalPath){
+    throw new ApiError(400, "avatar  uploaded");
    }
 
    const avatar= await uploadOnCloudinary(avatarLocalPath);
-   const coverImage=await uploadOnCloudinary(coverIamgeLocalPath)
+   const coverImage=await uploadOnCloudinary(coverImageLocalPath)
    if(!avatar ){
     throw new ApiError(400," unable to upload on cloudinary");
    }
@@ -63,7 +65,7 @@ const registerUser = asyncHandler(async (req, res) => {
     fullName,
     avatar:avatar.url,
     coverIamge:coverImage?.url || "",
-    userName:userName.lowerCase(),
+    userName:userName.toLowerCase(),
     email,
     password,
    })

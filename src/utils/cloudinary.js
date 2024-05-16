@@ -7,22 +7,33 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 // this code is suppose that the file which is uplaod by user is saved locally on server we try to uplaod it on cloudinary 
+// const uploadOnCloudinary = async (localFilePath) => {
+//   try {
+//     if (!localFilePath) return null;
+//     const response = await cloudinary.uploader.upload(localFilePath, {
+//       resource_type: "auto"
+//     });
+//     fs.unlinkSync(localFilePath)
+//     return response;
+     
+    
+//   } catch (error) {
+//     fs.unlinkSync(localFilePath)
+//     return error;
+//   }
+// };
 const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto"
-    }
-  );
-    fs.unlinkSync(localFilePath)
+    }); // Added missing closing parenthesis here
+    fs.unlinkSync(localFilePath);
     return response;
-     
-    
   } catch (error) {
-    fs.unlinkSync(localFilePath)
+    fs.unlinkSync(localFilePath);
     return error;
   }
 };
-
 
 export {uploadOnCloudinary};

@@ -30,3 +30,11 @@ step 6 :controller for user
 
 # related to mongodbatlas 
   if your password have special character in it then you have to change it using percent encoding 
+
+
+
+
+
+# Error
+- In postman i get an error for uploading two fields for file at a time -get resolve but don't able to know what the problem
+- when user already existed the files is not deleted - resolve by writing unLinkSync file in if condition of existed user 

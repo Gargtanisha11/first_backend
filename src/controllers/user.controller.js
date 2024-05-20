@@ -17,11 +17,9 @@ const registerUser = asyncHandler(async (req, res) => {
   //step 8 - check for user creation
   //step 9 - return res
 
-  const { fullName, email, password, userName } = req.body;
-  console.log(`this is email of user ${email} \n this is username ${userName}`); // step 1 we take data from user using postman in json format
+  const { fullName, email, password, userName } = req.body;   // step 1 we take data from user using postman in json format
 
 
-  console.log(req.files)
 
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
@@ -33,10 +31,10 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   //step3  check if user already existed or not   ( we take user  from user model which have the access of mongoose and we can check any field's existence by using find method )
-
   //  User.findOne(email)  is used for check one field at a time
+  
   const existedUser = await User.findOne({ $or: [{ email }, { userName }] });
-  // console.log(existedUser)
+ 
   if (existedUser) {
      fs.unlinkSync(req.files?.avatar[0]?.path);
      fs.unlinkSync(req.files?.coverImage[0]?.path)

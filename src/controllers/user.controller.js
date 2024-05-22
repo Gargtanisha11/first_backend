@@ -5,6 +5,24 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
 
+
+const generateAccessTokenrefreshToken=async(user)=>{  // there can be error because i pass whole object 
+    
+  try{
+     const accessToken= await user.generateAccessToken(); // generate access Token
+     const refreshToken= await user.generateRefreshToken(); //generate refresh token
+    
+     user.refreshToken =refreshToken   // change the value of refresh token in user  
+     awaituser.save({validateBeforeSave:false})   // save the user with refresh token their is no need to validate 
+    
+  return {accessToken,refreshToken}
+
+    }
+    catch(error){
+      throw new ApiError(500," something went wrong while generating access and refresh token ")
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
   //logic for register
   //step 1 - get user details from front end
@@ -89,6 +107,61 @@ const registerUser = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(new ApiResponse(200, createdUser, "User registered Successfully"));
+});
+
+
+const loginUser= asyncHandler(async(req,res)=>{
+    // req.body= data
+    // userName or email
+    // find the user 
+    // check the password 
+    // if yes  access and refresh Token
+    // send cookie
+
+
+    const {email,userName,password}=req.body; 
+
+    
+    const user= await User.findOne({
+      $or:{email,userName}
+        })
+
+    
+    if(!user){
+      throw new ApiError(404, " Not found this ",{email}, "or ",{userName})
+    }
+
+    
+    const isValidUser = user.isPasswordCorrect(password);
+
+    
+    if(!isValidUser){
+      throw new ApiError(401, "Invalid user credentials")
+    }
+
+
+    const {accessToken,refreshToken}=await generateAccessTokenrefreshToken(user)
+
+    const loggedInUser=await user.findById(user._id).select(" -password -refreshToken")
+
+
+    const options={
+      httpOnly:true,
+      secure:true // it insure that cookie can only be set by server
+    }
+
+    return res.status(200)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
+    .json(
+      new ApiResponse(
+        200,{
+          user:loggedInUser,refreshToken,accessToken
+        },
+        " user succesfully logged in"
+      )
+    )
+    
 });
 
 export { registerUser };

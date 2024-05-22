@@ -25,7 +25,10 @@ step 4 : cloudinary
 
 step 5 : user model and video model
 
-step 6 :controller for user 
+step 6 :controller for user - user register logic
+                            - user login logic 
+
+step 7 : 
 
 
 # related to mongodbatlas 
@@ -43,3 +46,5 @@ step 6 :controller for user
 # Postman
 - create environment variable for add (localhost:8000/api/v1 ) in request 
 - create collection name as youtubebackend -> users(folder) -> register( post request) ( its benefits is that it enable us to group our all request together, share it , oranganize our request ,use in Api request )
+
+

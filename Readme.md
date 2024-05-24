@@ -27,6 +27,7 @@ step 5 : user model and video model
 
 step 6 :controller for user - user register logic
                             - user login logic 
+                            - user logout logic (before logout logic we need to create an middleware )
 
 step 7 : 
 

@@ -50,23 +50,23 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified(this.password)) {
-    return;
-  }
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});   // code for hashing the password for saving
 
+
+userSchema.pre("save", async function (next) {
+  if(!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10)
+  next()
+})
 
 userSchema.methods.isPasswordCorrect=async function(password){
+  
       return await bcrypt.compare(password,this.password)  // this is time taking process that why we use async await here
 
-}    // this is custom method for check the password is match with save password using bcrypt.compare(npm package) method
-
+}  
 
 userSchema.methods.generateAccessToken=function(){
-  jwt.sign({     //sign method for generating the acc
+ return jwt.sign({     //sign method for generating the acc
        _id:this._id,
        email:this.email,
        userName:this.userName,
@@ -80,7 +80,7 @@ userSchema.methods.generateAccessToken=function(){
 }// this method for generating access token  
 
 userSchema.methods.generateRefreshToken=function(){
-   jwt.sign({     //sign method for generating the acc
+  return  jwt.sign({     //sign method for generating the acc
       _id:this._id,
       
  },

@@ -4,24 +4,26 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
 
-const generateAccessTokenRefreshToken = async (user) => {
+
+const generateAccessTokenRefreshToken = async (user_id) => {
   // there can be error because i pass whole object
 
   try {
+    const user=await User.findById(user_id);
     const accessToken = await user.generateAccessToken(); // generate access Token
     const refreshToken = await user.generateRefreshToken(); //generate refresh token
+    
 
     user.refreshToken = refreshToken; // change the value of refresh token in user
-    awaituser.save({ validateBeforeSave: false }); // save the user with refresh token their is no need to validate
+    await user.save({ validateBeforeSave: false }); // save the user with refresh token their is no need to validate
 
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
-      " something went wrong while generating access and refresh token "
-    );
+      " something went wrong while generating access and refresh token - "
++error    );
   }
 };
 
@@ -39,6 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { fullName, email, password, userName } = req.body; // step 1 we take data from user using postman in json format
 
+  console.log("full name ", req.body)
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
   }
@@ -119,25 +122,31 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { email, userName, password } = req.body;
 
+   
+  if(!(email || userName)){
+    throw new ApiError(404,"userName or email is required ");
+  }
+
   const user = await User.findOne({
-    $or: { email, userName },
+    $or:[{userName},{email}]
   });
 
   if (!user) {
     throw new ApiError(404, " Not found this ", { email }, "or ", { userName });
   }
 
-  const isValidUser = user.isPasswordCorrect(password);
+  const isValidUser = await user.isPasswordCorrect(password);
+  
 
   if (!isValidUser) {
     throw new ApiError(401, "Invalid user credentials");
   }
 
   const { accessToken, refreshToken } = await generateAccessTokenRefreshToken(
-    user
+    user._id
   );
 
-  const loggedInUser = await user
+  const loggedInUser = await User
     .findById(user._id)
     .select(" -password -refreshToken");
 
@@ -163,7 +172,7 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-const logout = asyncHandler(async (req, res) => {
+const logoutUser = asyncHandler(async (req, res) => {
   // logout means we delete refresh Token from cookie and user data
   // for refresh token we need to check first is user logged in or not
   // to get  refresh token  we want user data and for it we create an custom middleware to verify jwt (middleware  is like a softwaare wich acts intemediate between two services )
@@ -194,4 +203,4 @@ const logout = asyncHandler(async (req, res) => {
  
 });
 
-export { registerUser, loginUser };
+export { registerUser, loginUser,logoutUser};

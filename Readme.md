@@ -28,6 +28,12 @@ step 5 : user model and video model
 step 6 :controller for user - user register logic
                             - user login logic 
                             - user logout logic (before logout logic we need to create an middleware )
+                            - test this logics is correct or not 
+                               1. i pass whole intentionaly to check is it worked or not it show error
+                               2. forget to write await when fetch the data from mongo db 
+                               3. forget to write return in genrating the acess Token or refresh Token  
+                               4. password is not hashed in user model in registering time because i do typo error i write password instead of "password"
+                               5. logged in user even after wrong password because i don't use await when i call that function because bcrypt.compare function is asynchronous 
 
 step 7 : 
 

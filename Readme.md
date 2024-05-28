@@ -34,6 +34,7 @@ step 6 :controller for user - user register logic
                                3. forget to write return in genrating the acess Token or refresh Token  
                                4. password is not hashed in user model in registering time because i do typo error i write password instead of "password"
                                5. logged in user even after wrong password because i don't use await when i call that function because bcrypt.compare function is asynchronous 
+                           - write the controller t handle end point when acess toke is expired 
 
 step 7 : 
 

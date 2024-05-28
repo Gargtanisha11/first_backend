@@ -7,15 +7,13 @@ import fs from "fs";
 import { options } from "../constant.js";
 import jwt from "jsonwebtoken";
 
-
 const generateAccessTokenRefreshToken = async (user_id) => {
   // there can be error because i pass whole object
 
   try {
-    const user=await User.findById(user_id);
+    const user = await User.findById(user_id);
     const accessToken = await user.generateAccessToken(); // generate access Token
     const refreshToken = await user.generateRefreshToken(); //generate refresh token
-    
 
     user.refreshToken = refreshToken; // change the value of refresh token in user
     await user.save({ validateBeforeSave: false }); // save the user with refresh token their is no need to validate
@@ -24,8 +22,9 @@ const generateAccessTokenRefreshToken = async (user_id) => {
   } catch (error) {
     throw new ApiError(
       500,
-      " something went wrong while generating access and refresh token - "
-+error    );
+      " something went wrong while generating access and refresh token - " +
+        error
+    );
   }
 };
 
@@ -43,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { fullName, email, password, userName } = req.body; // step 1 we take data from user using postman in json format
 
-  console.log("full name ", req.body)
+  console.log("full name ", req.body);
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
   }
@@ -124,13 +123,12 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { email, userName, password } = req.body;
 
-   
-  if(!(email || userName)){
-    throw new ApiError(404,"userName or email is required ");
+  if (!(email || userName)) {
+    throw new ApiError(404, "userName or email is required ");
   }
 
   const user = await User.findOne({
-    $or:[{userName},{email}]
+    $or: [{ userName }, { email }],
   });
 
   if (!user) {
@@ -138,7 +136,6 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const isValidUser = await user.isPasswordCorrect(password);
-  
 
   if (!isValidUser) {
     throw new ApiError(401, "Invalid user credentials");
@@ -148,9 +145,9 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  const loggedInUser = await User
-    .findById(user._id)
-    .select(" -password -refreshToken");
+  const loggedInUser = await User.findById(user._id).select(
+    " -password -refreshToken"
+  );
 
   return res
     .status(200)
@@ -175,70 +172,172 @@ const logoutUser = asyncHandler(async (req, res) => {
   // to get  refresh token  we want user data and for it we create an custom middleware to verify jwt (middleware  is like a softwaare wich acts intemediate between two services )
   // by doing req.user = user in  middleware  (we get access of req.user)
   await User.findByIdAndUpdate(
-    req.user._id, 
-    { $set: {
-    refreshToken:undefined
-      }
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
     },
     {
-    new:true
+      new: true,
     }
-
   );
 
-
-  const options={
-    httpOnly:true,
-    secure:true
-  }
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
 
   return res
-  .status(200)
-  .clearCookie("accessToken",options)
-  .clearCookie('refreshToken',options)
-  .json( new ApiResponse(200,{},' SuccessFul LogOut '))
- 
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, " SuccessFul LogOut "));
 });
 
-const refreshAcessToken=(async(req,res)=>{
-   //step1  take the user refresh token  from user cookie or body 
-   //step2  decode the id from it 
-   //step3  find the user by id and then match is the refresh Token is same or not 
-   //step4 is it same then genrate the access Token and refresh token 
+const refreshAcessToken = asyncHandler(async (req, res) => {
+  //step1  take the user refresh token  from user cookie or body
+  //step2  decode the id from it
+  //step3  find the user by id and then match is the refresh Token is same or not
+  //step4 is it same then generate the access Token and refresh token
+  // step5 return the status cookies and json
 
-   const incomingRefreshToken=req.cookies.refreshToken || req.body.refreshToken
-   if(!incomingRefreshToken){
-    throw new ApiError(404," unauthorized request")
-   }
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new ApiError(404, " unauthorized request");
+  }
 
-   const decodedToken =  jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET)
+  const decodedToken = jwt.verify(
+    incomingRefreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
 
-   const user =await User.findById(decodedToken?._id)
+  const user = await User.findById(decodedToken?._id);
 
-   if(!user){
-    throw new ApiError(401,"Invalid Refresh Token")
-   }
+  if (!user) {
+    throw new ApiError(401, "Invalid Refresh Token");
+  }
 
-   if(incomingRefreshToken!==user.refreshToken){
-    throw new ApiError(401,"Invalid Refresh Token")
-   }
+  if (incomingRefreshToken !== user.refreshToken) {
+    throw new ApiError(401, "Invalid Refresh Token");
+  }
 
-    const {accessToken, newRefreshToken}=await generateAccessTokenRefreshToken(user._id);
+  const { accessToken, newRefreshToken } =
+    await generateAccessTokenRefreshToken(user._id);
 
-   
-
-    return res
+  return res
     .status(200)
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",newRefreshToken,options)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", newRefreshToken, options)
     .json(
-      new ApiResponse(200,{
+      new ApiResponse(200, {
         accessToken,
-        refreshToken:newRefreshToken
+        refreshToken: newRefreshToken,
       })
-    )
+    );
+});
 
+const changeOldPassword = asyncHandler(async (req, res) => {
+  // take the old password and new password
+  //  the fetch the user data from User model  using req.user._id beacause of auth middlware
+  //   change the  password  and then save it without saving it doesn't reflect
+  const { oldPassword, newPassword } = req.body;
+  // suppose we also get the confirmPassword first we destructure it and then we validate that is it equal or not using if condition
 
-})
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw new ApiError(401, "unauthorized access");
+  }
 
-export { registerUser, loginUser,logoutUser,refreshAcessToken};
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "unauthorized access");
+  }
+  user.password = newPassword;
+
+  await user.save({ validateBeforeSave: true });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, " succesfully change your password"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, req.user, "current user data fetched successfully ")
+    );
+});
+
+// Suggestion : we should keep separate end point to update files
+// quetions : should we check the authentication before updating the account details -  this will we take care at the time of routing
+const updateAccountdetails = asyncHandler(async (req, res) => {
+  // take the data which user want to update  from req.body
+  // check if user has send the details or not
+  // get the user form find by id and also we can use findByIdAndUpdate for changing the details
+  // change the detail and then save it
+
+  const { fullName, email } = req.body;
+  if (!fullName || !email) {
+    throw new ApiError(402, " All Field Required");
+  }
+
+  const user = User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName: fullName,
+        email: email,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated Successfully"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  // take the file using multer in routing
+  // check is file not sending by user or not
+  // save in local and  upload on cloudinary using storage from multer middleware
+  // save the link in user data base using findbyidandupdatemethod
+
+  const avatarLocalPath = req.files.avatar[0].path;
+  if (!avatarLocalPath) {
+    throw new ApiError(402, " avatar field required");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar) {
+    throw new ApiError(
+      501,
+      " something went wrong while uploading the file on server"
+    );
+  }
+
+  await User.findByIdAndUpdate(
+    req.user?._id, 
+    { $set: {
+      avatar: avatar,
+    }
+  },
+    {new:true}
+  );
+
+  return res.status(200).json(new ApiResponse(200,{}," avatar file updated successfully"))
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAcessToken,
+  changeOldPassword,
+  getCurrentUser,
+  updateAccountdetails,
+};

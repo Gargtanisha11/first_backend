@@ -23,7 +23,7 @@ step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string )
 
 step 4 : cloudinary
 
-step 5 : user model and video model
+step 5 : user model , video model ,subscription model
 
 step 6 :controller for user - user register logic
                             - user login logic 
@@ -35,6 +35,7 @@ step 6 :controller for user - user register logic
                                4. password is not hashed in user model in registering time because i do typo error i write password instead of "password"
                                5. logged in user even after wrong password because i don't use await when i call that function because bcrypt.compare function is asynchronous 
                            - write the controller t handle end point when acess toke is expired 
+
 
 step 7 : 
 

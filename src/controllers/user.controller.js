@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+
 import {
   deleteFromCloudinary,
   uploadOnCloudinary,
@@ -9,6 +10,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
 import { options } from "../constant.js";
 import jwt from "jsonwebtoken";
+import { subscribe } from "diagnostics_channel";
 
 
 const generateAccessTokenRefreshToken = async (user_id) => {
@@ -378,6 +380,68 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200,updatedUser,"coverImage file updated successfully"))
 });
 
+ const getUserChannelProfile=asyncHandler(async(req,res)=>{ // controller for see the other Channel profile
+
+  const {username}=req.params
+  if(!username){
+    throw new ApiResponse(401," username is missing")
+  }
+  const channel= await User.aggregate( [
+    {
+      $match:{
+        userName:username?.toLowerCase()
+      }
+    },
+    {
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"Subscriber",
+        as:"subscriber"
+      }
+    },
+    {
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"Channel",
+        as:"subscribedTo"
+      }
+    },
+    {
+      $addFields:{
+        subscriberCount : {
+          $size:'$subscriber'
+        },
+        subscribedToCount:{
+          $size:"$subscribedTo"
+        },
+        isSubscribed:{
+           $cond: { 
+              if:{ $in: [req.user?._id,"$subscribers.subscriber" ] } },
+              then:true,
+              else:false
+          }
+        }
+      },
+      {
+        $project:{
+          fullName:1,
+          userName:1,
+          email:1,
+          subscriberCount:1,
+          subscribedToCount:1,
+          createdAt:1,
+          avatar:1,
+          coverImage:1,
+
+        }
+      }
+    
+  ]) 
+
+ })
+
 export {
   registerUser,
   loginUser,
@@ -387,4 +451,5 @@ export {
   getCurrentUser,
   updateAccountdetails,
   updateUserAvatar,
+  updateCoverImage
 };

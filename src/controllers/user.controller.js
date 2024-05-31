@@ -1,11 +1,15 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
 import { options } from "../constant.js";
 import jwt from "jsonwebtoken";
+
 
 const generateAccessTokenRefreshToken = async (user_id) => {
   // there can be error because i pass whole object
@@ -307,29 +311,71 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   // save in local and  upload on cloudinary using storage from multer middleware
   // save the link in user data base using findbyidandupdatemethod
 
-  const avatarLocalPath = req.files.avatar[0].path;
+  const avatarLocalPath = req.file.path;
   if (!avatarLocalPath) {
     throw new ApiError(402, " avatar field required");
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  if (!avatar) {
+  if (!avatar.url) {
     throw new ApiError(
       501,
       " something went wrong while uploading the file on server"
     );
   }
 
-  await User.findByIdAndUpdate(
-    req.user?._id, 
-    { $set: {
-      avatar: avatar,
-    }
-  },
-    {new:true}
-  );
+  const user = await User.findByIdAndUpdate(req.user?._id, {
+    $set: {
+      avatar: avatar.url,
+    },
+  });
+  const isDeleted = deleteFromCloudinary(user.coverImage);
 
-  return res.status(200).json(new ApiResponse(200,{}," avatar file updated successfully"))
+  if (!isDeleted) {
+    throw new ApiError(401, " file is not deleted");
+  }
+  const updatedUser=User.findById(user._id).select("-password ")
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, " avatar file updated successfully"));
+});
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  // take the local path of the file
+  // check  if it there
+  // upload the file on cloudinary
+  // use findByIdandUpdate to update it
+  // delete the file from cloudinary
+  // return the response
+
+  const coverImageLocalPath = req.file.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(402, " it is required to upload the coverImage file");
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  if (!coverImage.url) {
+    throw new ApiError(500, " Unable to upload coverImage on cloudinary");
+  }
+
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      coverImage: coverImage.url,
+    },
+  });
+ const isDeleted=deleteFromCloudinary(user.coverImage);
+
+  if (!isDeleted) {
+    throw new ApiError(
+      500,
+      " unable to delete the coverimage file from cloudinary"
+    );
+  }
+
+  const updatedUser=User.findById(user._id).select("-password ")
+
+  return res.status(200).json(new ApiResponse(200,updatedUser,"coverImage file updated successfully"))
 });
 
 export {
@@ -340,4 +386,5 @@ export {
   changeOldPassword,
   getCurrentUser,
   updateAccountdetails,
+  updateUserAvatar,
 };

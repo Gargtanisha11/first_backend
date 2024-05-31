@@ -1,5 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { ApiError } from "./ApiError";
+import { getPublicIdFromCloudinaryUrl } from "./helperFun";
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -36,4 +38,24 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export {uploadOnCloudinary};
+
+const deleteFromCloudinary=async(localFilePath)=>{
+  try{
+    if(!localFilePath) return null;
+    const publicId=getPublicIdFromCloudinaryUrl(localFilePath);
+    if(!publicId){
+      throw new ApiError(401,"not ifmd Public Id");
+    }
+   
+
+    const response=await cloudinary.uploader.destroy(publicId,()=>console.log("deleted"));
+
+    fs.unlinkSync(localFilePath)
+    return response;
+  }
+  catch(error){
+    fs.unlinkSync(localFilePath);
+    return error;
+  }
+}
+export {uploadOnCloudinary,deleteFromCloudinary};

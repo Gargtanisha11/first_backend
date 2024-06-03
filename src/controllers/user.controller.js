@@ -10,8 +10,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs";
 import { options } from "../constant.js";
 import jwt from "jsonwebtoken";
-import { subscribe } from "diagnostics_channel";
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 const generateAccessTokenRefreshToken = async (user_id) => {
   // there can be error because i pass whole object

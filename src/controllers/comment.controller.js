@@ -140,4 +140,4 @@ const updateComment=asyncHandler(async(req,res)=>{
 })
 
 
-export { addComment ,getVideoComment,deleteComment};
+export { addComment ,getVideoComment,deleteComment,updateComment};

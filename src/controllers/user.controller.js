@@ -50,7 +50,8 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log("full name ", req.body);
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
-  }
+  } 
+  
   if (
     [fullName, email, userName, password].some((field) => field.trim() === "")
   ) {
@@ -71,6 +72,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // multer give access for res.files
   const avatarLocalPath = req.files?.avatar[0]?.path;
   let coverImageLocalPath;
+ 
   if (
     req.files &&
     Array.isArray(req.files.coverImage) &&

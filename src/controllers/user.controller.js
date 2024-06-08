@@ -50,8 +50,8 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log("full name ", req.body);
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
-  } 
-  
+  }
+
   if (
     [fullName, email, userName, password].some((field) => field.trim() === "")
   ) {
@@ -72,7 +72,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // multer give access for res.files
   const avatarLocalPath = req.files?.avatar[0]?.path;
   let coverImageLocalPath;
- 
+
   if (
     req.files &&
     Array.isArray(req.files.coverImage) &&
@@ -252,8 +252,8 @@ const changeOldPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   // suppose we also get the confirmPassword first we destructure it and then we validate that is it equal or not using if condition
 
-  if(!(oldPassword && newPassword)){
-    throw new ApiError(404, "password are required " );
+  if (!(oldPassword && newPassword)) {
+    throw new ApiError(404, "password are required ");
   }
 
   const user = await User.findById(req.user?._id);
@@ -292,18 +292,17 @@ const updateAccountdetails = asyncHandler(async (req, res) => {
   // change the detail and then save it
 
   const { fullName, email } = req.body;
-  if (!(fullName || email) ){
+  if (!(fullName || email)) {
     throw new ApiError(402, " All Field Required");
   }
-  const user= await User.findById(req.user._id);
-  if(fullName){
-    user.fullName=fullName;
+  const user = await User.findById(req.user._id);
+  if (fullName) {
+    user.fullName = fullName;
   }
-  if(email){
-    user.email=email;
+  if (email) {
+    user.email = email;
   }
-  user.save({validateBeforeSave:true});
-
+  user.save({ validateBeforeSave: true });
 
   // const user = User.findByIdAndUpdate(
   //   req.user?._id,
@@ -326,8 +325,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   // check is file not sending by user or not
   // save in local and  upload on cloudinary using storage from multer middleware
   // save the link in user data base using findbyidandupdatemethod
+  // delete the old file link from cloudinary using custom method of cloudnary.js
 
-  const avatarLocalPath = req.file.path;
+  const avatarLocalPath = req.file?.path;
+
   if (!avatarLocalPath) {
     throw new ApiError(402, " avatar field required");
   }
@@ -340,23 +341,25 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     );
   }
 
-  const user = await User.findByIdAndUpdate(req.user?._id, {
-    $set: {
-      avatar: avatar.url,
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
     },
-  });
-  const isDeleted = deleteFromCloudinary(user.coverImage);
+    { new: true }
+  ).select("-password");
+
+  const isDeleted = await deleteFromCloudinary(req.user?.avatar);
 
   if (!isDeleted) {
-    throw new ApiError(401, " file is not deleted");
+    throw new ApiError(401, " file is not deleted errro is ", isDeleted);
   }
-  const updatedUser = User.findById(user._id).select("-password ");
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, updatedUser, " avatar file updated successfully")
-    );
+    .json(new ApiResponse(200, user, " avatar file updated successfully"));
 });
 
 const updateCoverImage = asyncHandler(async (req, res) => {
@@ -377,26 +380,32 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(500, " Unable to upload coverImage on cloudinary");
   }
 
-  const user = await User.findByIdAndUpdate(req.user._id, {
-    $set: {
-      coverImage: coverImage.url,
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
     },
-  });
-  const isDeleted = deleteFromCloudinary(user.coverImage);
+    { new: true }
+  );
+  if (req.user?.coverImage) {
+    const isDeleted = deleteFromCloudinary(req.user?.coverImage);
 
-  if (!isDeleted) {
-    throw new ApiError(
-      500,
-      " unable to delete the coverimage file from cloudinary"
-    );
+    if (!isDeleted) {
+      throw new ApiError(
+        500,
+        " unable to delete the coverimage file from cloudinary"
+      );
+    }
   }
 
-  const updatedUser = User.findById(user._id).select("-password ");
+
 
   return res
     .status(200)
     .json(
-      new ApiResponse(200, updatedUser, "coverImage file updated successfully")
+      new ApiResponse(200, user, "coverImage file updated successfully")
     );
 });
 
@@ -404,7 +413,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   // controller for see the other Channel profile
 
   const { username } = req.params;
-  if (!username) {
+  if (!username?.trim()) {
     throw new ApiResponse(401, " username is missing");
   }
   const channel = await User.aggregate([
@@ -417,22 +426,23 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
-        foreignField: "Subscriber",
-        as: "subscriber",
+        foreignField: "subscriber",
+        as: "subscribers",
       },
     },
+    
     {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
-        foreignField: "Channel",
+        foreignField: "channel",
         as: "subscribedTo",
       },
     },
     {
       $addFields: {
         subscriberCount: {
-          $size: "$subscriber",
+          $size: "$subscribers",
         },
         subscribedToCount: {
           $size: "$subscribedTo",
@@ -440,12 +450,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         isSubscribed: {
           $cond: {
             if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-          },
           then: true,
           else: false,
         },
+        },
       },
-    },
+    }, 
     {
       $project: {
         fullName: 1,
@@ -460,7 +470,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
   ]);
 
-  console.log(channel);
   if (!channel?.length) {
     throw new ApiError(401, "channel doesn't exist ");
   }
@@ -471,6 +480,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       new ApiResponse(200, channel[0], "user channel fetched successfully")
     );
 });
+
 
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
@@ -488,36 +498,42 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         pipeline: [
           {
             $lookup: {
-              from:"users",
-              localField:"owner",
-              foreignField:"_id",
-              as:"owner",
-              pipeline:[
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
                 {
-                  $project:{
-                    fullName:1,
-                    avatar:1,
-                    userName:1
-                  }
+                  $project: {
+                    fullName: 1,
+                    avatar: 1,
+                    userName: 1,
+                  },
                 },
-                
-              ]
+              ],
             },
           },
           {
-            $addFields:{
-              owner:{
-                $first:'$owner'// ArrayElemat:["$owner",0]
-              }
-          }
-          
-          }
+            $addFields: {
+              owner: {
+                $first: "$owner", // ArrayElemat:["$owner",0]
+              },
+            },
+          },
         ],
       },
     },
   ]);
 
-  return res.satus(200).json( new ApiResponse(200,user[0].watchHistory," successfully fetched the watch history"))
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        " successfully fetched the watch history"
+      )
+    );
 });
 
 export {
@@ -531,5 +547,5 @@ export {
   updateUserAvatar,
   updateCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
 };

@@ -60,4 +60,4 @@ step 7 :
 
 # to do 
  solve the pagination problem in video controller 
- debugg the controller of comment and video
+ debugg the controller of user, comment and video

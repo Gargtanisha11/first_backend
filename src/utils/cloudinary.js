@@ -23,22 +23,19 @@ const uploadOnCloudinary = async (localFilePath) => {
 };
 
 
-const deleteFromCloudinary=async(localFilePath)=>{
+const deleteFromCloudinary=async(url)=>{
   try{
-    if(!localFilePath) return null;
-    const publicId=getPublicIdFromCloudinaryUrl(localFilePath);
+    if(!url) return null;
+    const publicId=getPublicIdFromCloudinaryUrl(url);
+    
     if(!publicId){
       return null;
     }
-   
-
-    const response=await cloudinary.uploader.destroy(publicId,()=>console.log("deleted"));
-
-    fs.unlinkSync(localFilePath)
+    const response=await cloudinary.uploader.destroy(publicId);   
     return response;
   }
   catch(error){
-    fs.unlinkSync(localFilePath);
+    
     return error;
   }
 }

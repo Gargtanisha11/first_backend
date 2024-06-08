@@ -252,6 +252,10 @@ const changeOldPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   // suppose we also get the confirmPassword first we destructure it and then we validate that is it equal or not using if condition
 
+  if(!(oldPassword && newPassword)){
+    throw new ApiError(404, "password are required " );
+  }
+
   const user = await User.findById(req.user?._id);
   if (!user) {
     throw new ApiError(401, "unauthorized access");
@@ -288,24 +292,33 @@ const updateAccountdetails = asyncHandler(async (req, res) => {
   // change the detail and then save it
 
   const { fullName, email } = req.body;
-  if (!fullName || !email) {
+  if (!(fullName || email) ){
     throw new ApiError(402, " All Field Required");
   }
+  const user= await User.findById(req.user._id);
+  if(fullName){
+    user.fullName=fullName;
+  }
+  if(email){
+    user.email=email;
+  }
+  user.save({validateBeforeSave:true});
 
-  const user = User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        fullName: fullName,
-        email: email,
-      },
-    },
-    { new: true }
-  ).select("-password");
+
+  // const user = User.findByIdAndUpdate(
+  //   req.user?._id,
+  //   {
+  //     $set: {
+  //       fullName: fullName,
+  //       email: email,
+  //     },
+  //   },
+  //   { new: true }
+  // ).select("-password");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Account details updated Successfully"));
+    .json(new ApiResponse(200, [], "Account details updated Successfully"));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {

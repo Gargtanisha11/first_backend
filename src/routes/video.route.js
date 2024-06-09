@@ -38,7 +38,7 @@ router
   .patch(upload.single("thumbnail"), updateVideo); // update the video by Id
 
 router
-  .route("/togglePublishStatus") // toggle publish status
+  .route("/togglePublishStatus/:videoId") // toggle publish status
   .patch(togglePublishStatus);
 
 export default router;

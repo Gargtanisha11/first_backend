@@ -2,11 +2,15 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { ApiError } from "../utils/ApiError.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 0, limit = 10, query, sortBy, sortType, userId } = req.query;
+
   //TODO: get all videos based on query, sort, pagination
   var result = [];
 
@@ -17,7 +21,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         index: "search-video",
         text: {
           query: query,
-          path: ["title,description"],
+          path: ["title", "description"],
         },
       },
     });
@@ -26,19 +30,19 @@ const getAllVideos = asyncHandler(async (req, res) => {
   // aggregation pipeline to get the video of a particular user
   if (userId) {
     if (!isValidObjectId(userId)) {
-      throw new ApiError();
+      throw new ApiError(400, " not valid user ");
     }
     result.push({
       $match: {
-        owner: new mongoose.Types.ObjectId(),
+        owner: new mongoose.Types.ObjectId(userId),
       },
     });
   }
 
-  if (sortBy || sortType) {
+  if (sortBy) {
     result.push({
       $sort: {
-        [sortBy]: sortType == desc ? -1 : 1,
+        [sortBy]: sortType == "desc" ? -1 : 1,
       },
     });
   }
@@ -46,14 +50,14 @@ const getAllVideos = asyncHandler(async (req, res) => {
   result.push(
     {
       $match: {
-        isPublished: "true",
+        isPublished: true,
       },
     },
     {
       $skip: page * limit,
     },
     {
-      $limit: limit,
+      $limit: limit * 1,
     },
     {
       $project: {
@@ -70,7 +74,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
   );
 
   const video = await Video.aggregate(result);
-  if (!video) {
+
+  if (!video.length) {
     throw new ApiError(501, " unable to fetch video data");
   }
 
@@ -79,17 +84,17 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, " successfully video data fetched"));
 });
 
-const publishAVideo = asyncHandler(async (res, req) => {
-  // take the video from res.body
+const publishAVideo = asyncHandler(async (req, res) => {
+  // take the video from req.body
   // checks for required data is present
   // upload thumbnail and videofile on cloudinary
   // delete the local file from machine (already done in uploadoncloudinary middleware)
   // check if is successfully updated on cloudinary
   // create video object and save the data (isPublished=1 and owner = req.user.objetId)
   // return the response with video object
-  const { title, description } = res.body;
-  const videoLocalPath = res.files.video[0].path;
-  const thumbnailLocalPath = res.files.thumbnail[0].path;
+  const { title, description } = req.body;
+  const videoLocalPath = req.files.video[0].path;
+  const thumbnailLocalPath = req.files.thumbnail[0].path;
 
   if (!title || !description) {
     throw new ApiError(402, " title and description are required ");
@@ -123,7 +128,8 @@ const publishAVideo = asyncHandler(async (res, req) => {
     owner: req.user?._id,
     duration: videoFile?.duration,
     isPublished: true,
-  }).select("-isPublished");
+    views: 0,
+  });
 
   if (!uploadedVideo) {
     throw new ApiError(401, " something went wrong while publishing the video");
@@ -131,11 +137,13 @@ const publishAVideo = asyncHandler(async (res, req) => {
 
   return res
     .status(200)
-    .json(200, uploadedVideo, " Successfully uploaded the video");
+    .json(
+      new ApiResponse(200, uploadedVideo, " Successfully uploaded the video")
+    );
 });
 
-const getVideoById = asyncHandler(async (res, req) => {
-  const { videoId } = res.params;
+const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
   const video = await Video.aggregate([
     {
       $match: {
@@ -179,7 +187,7 @@ const getVideoById = asyncHandler(async (res, req) => {
     );
 });
 
-const updateVideo = asyncHandler(async (res, req) => {
+const updateVideo = asyncHandler(async (req, res) => {
   // get the video Id by res.params
   // get the data want to change from res.body
   // check if data come or not
@@ -187,11 +195,12 @@ const updateVideo = asyncHandler(async (res, req) => {
   // check if fields update successfully  or not
   // return the response
 
-  const { videoId } = res.params;
+  const { videoId } = req.params;
   if (!videoId) {
     throw new ApiError(402, " video Id is required ");
   }
-  const { title, description, thumbnail } = res.body;
+  const { title, description } = req.body;
+  const thumbnail = req.file.path;
 
   const video = await Video.findById(videoId);
   if (!(title || thumbnail || description)) {
@@ -208,6 +217,14 @@ const updateVideo = asyncHandler(async (res, req) => {
     if (!thumbnailFile.url) {
       throw new ApiError(501, " not able to upload on Cloudinary");
     }
+    const oldThumbnail = video.thumbnail;
+    const isDeleted = await deleteFromCloudinary(oldThumbnail);
+    if (!isDeleted) {
+      throw new ApiError(
+        501,
+        " old thumbnail is not able to delete from cloudinary"
+      );
+    }
     video.thumbnail = thumbnailFile.url;
   }
   video.save({ validateBeforeSave: true });
@@ -217,16 +234,16 @@ const updateVideo = asyncHandler(async (res, req) => {
     .json(new ApiResponse(200, video, " successfully update the video"));
 });
 
-const deleteVideo = asyncHandler(async (res, req) => {
-  const { videoId } = res.params;
+const deleteVideo = asyncHandler(async (req,res) => {
+  const { videoId } = req.params;
   const isDeleted = await Video.findByIdAndDelete(videoId);
   return res
     .status(200)
     .json(new ApiResponse(200, isDeleted, " Video deleted successfully "));
 });
 
-const togglePublishStatus = asyncHandler(async (res, req) => {
-  const { videoId } = res.params;
+const togglePublishStatus = asyncHandler(async (req,res) => {
+  const { videoId } = req.params;
   const video = await Video.findById(videoId);
   video.isPublished = !video.isPublished;
   video.save({ validateBeforeSave: true });

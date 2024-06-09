@@ -32,9 +32,9 @@ app.use(cookieParser());
 //import routers 
 
 import userRouter from "./routes/user.routes.js"
-
+import videoRouter from "./routes/video.route.js"
 
 // route declartion
 app.use("/api/v1/users",userRouter)// middleware to give control to userrouter when "users " url hits 
-
+app.use("/api/v1/videos",videoRouter);
 export { app };

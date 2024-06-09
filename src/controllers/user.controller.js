@@ -47,7 +47,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { fullName, email, password, userName } = req.body; // step 1 we take data from user using postman in json format
 
-  console.log("full name ", req.body);
+
   if (fullName == "") {
     throw new ApiError(400, "all fields are neccessary "); // step 2
   }
@@ -68,9 +68,10 @@ const registerUser = asyncHandler(async (req, res) => {
     fs.unlinkSync(req.files?.coverImage[0]?.path);
     throw new ApiError(409, " User already existed ");
   }
-
+  console.log(req.files)
   // multer give access for res.files
   const avatarLocalPath = req.files?.avatar[0]?.path;
+    
   let coverImageLocalPath;
 
   if (

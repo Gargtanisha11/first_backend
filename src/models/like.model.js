@@ -20,4 +20,4 @@ const likeSchema=new Schema({
     }
 },{timestamps:true});
 
-export const LikedBy= new mongoose.model("LikedBy",likeSchema);
+export const LikedBy=  mongoose.model("LikedBy",likeSchema);

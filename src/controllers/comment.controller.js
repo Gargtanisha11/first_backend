@@ -3,8 +3,8 @@
  // add comment
  // delete comment
  // update comment
-import mongoose from "mongoose";
-import { ApiError } from "../utils/ApiError";
+import mongoose, { isValidObjectId } from "mongoose";
+import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Comment } from "../models/comment.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -13,14 +13,19 @@ const addComment = asyncHandler(async (req, res) => {
   // get data from req.body
   // check if data present or not
   // if present then create the comment
-  const { content, video, owner } = req.body;
-  if ([content, video, owner].some((field) => field === "")) {
+  const {content} = req.body;
+  const {videoId}=req.params;
+  const owner=req.user?._id
+  if ([content, videoId, owner].some((field) => field === "")) {
     throw new ApiError(402, "All field are required! ");
   }
-
+ console.log(req.body);
+ if(!isValidObjectId(videoId)){
+  throw new ApiError(403," not the valid video Id");
+ }
   const comment = await Comment.create({
     content,
-    video,
+    video:videoId,
     owner,
   });
   if (!comment) {
@@ -34,20 +39,19 @@ const getVideoComment = asyncHandler(async (req, res) => {
   // get the videoId  for comment and page or limit from res.query
   //aggregation pipeline for all comment  -> match the all comment wityh video id ->lookup with video model to get video an dthen owner name from owner id
 
-  const { videoId } = res.params;
-  const { page = 0, limit = 10 } = res.query;
+  const { videoId } = req.params;
+  const { page = 0, limit = 10 } = req.query;
  
-  if(!videoId){
+  if(!isValidObjectId(videoId)){
     throw new ApiError(400," video id is required");
   }
-
+ 
   const comment =await Comment.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(videoId),
+        video: new mongoose.Types.ObjectId(videoId),
       },
     },
-
     {
       $lookup: {
         from: "users",
@@ -82,7 +86,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
       $skip: page * limit,
     },
     {
-      $limit: limit,
+      $limit: limit*1,
     },
 
     {
@@ -94,7 +98,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
           userName: 1,
           _id: 1,
         },
-        likes: { $ifNull: ["likes", 0] },
+        likes: { $ifNull: ["$likes", 0] },
       },
     },
   ]);
@@ -105,8 +109,8 @@ const getVideoComment = asyncHandler(async (req, res) => {
 const deleteComment=asyncHandler(async(req,res)=>{
    //get comment id
    const {commentId}=req.params;
-   if(!commentId){
-    throw new ApiError(401, "comment id is required");
+   if(!isValidObjectId(commentId)){
+    throw new ApiError(401, "comment id is valid");
    }
   try {
     await Comment.deleteOne({ _id:new mongoose.Types.ObjectId(commentId)}); // if deleted then it return {acknowledged:true,deleted:1}
@@ -119,12 +123,15 @@ const deleteComment=asyncHandler(async(req,res)=>{
 });
 
 const updateComment=asyncHandler(async(req,res)=>{
-  const {content}=res.body;
-  const {commentId}=res.params;
+  const {content}=req.body;
+  const {commentId}=req.params;
   if(!content || !commentId){
     throw new ApiError(401," Content and Comment id both are required ");
   }
   const comment = await Comment.findById(commentId);
+  if(!comment){
+    throw new ApiError(400, " not valid comment Id")
+  }
   comment.content=content;
   await comment.save({validateBeforeSave:true});
   
@@ -140,4 +147,8 @@ const updateComment=asyncHandler(async(req,res)=>{
 })
 
 
-export { addComment ,getVideoComment,deleteComment,updateComment};
+export { 
+  addComment ,
+  getVideoComment,
+  deleteComment,
+  updateComment};

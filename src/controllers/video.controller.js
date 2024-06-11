@@ -201,42 +201,51 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
   const { title, description } = req.body;
   const thumbnail = req.file.path;
-
-  const video = await Video.findById(videoId);
-  if (!(title || thumbnail || description)) {
-    throw new ApiError(401, " fields are required");
-  }
-  if (title) {
-    video.title = title;
-  }
-  if (description) {
-    video.description = description;
-  }
-  if (thumbnail) {
-    const thumbnailFile = await uploadOnCloudinary(thumbnail);
-    if (!thumbnailFile.url) {
-      throw new ApiError(501, " not able to upload on Cloudinary");
+try {
+  
+    const video = await Video.findById(videoId);
+    if (!(title || thumbnail || description)) {
+      throw new ApiError(401, " fields are required");
     }
-    const oldThumbnail = video.thumbnail;
-    const isDeleted = await deleteFromCloudinary(oldThumbnail);
-    if (!isDeleted) {
-      throw new ApiError(
-        501,
-        " old thumbnail is not able to delete from cloudinary"
-      );
+    if (title) {
+      video.title = title;
     }
-    video.thumbnail = thumbnailFile.url;
-  }
-  video.save({ validateBeforeSave: true });
-
+    if (description) {
+      video.description = description;
+    }
+    if (thumbnail) {
+      const thumbnailFile = await uploadOnCloudinary(thumbnail);
+      if (!thumbnailFile.url) {
+        throw new ApiError(501, " not able to upload on Cloudinary");
+      }
+      const oldThumbnail = video.thumbnail;
+      const isDeleted = await deleteFromCloudinary(oldThumbnail);
+      if (!isDeleted) {
+        throw new ApiError(
+          501,
+          " old thumbnail is not able to delete from cloudinary"
+        );
+      }
+      video.thumbnail = thumbnailFile.url;
+    }
+    video.save({ validateBeforeSave: true });
+  
+} catch (error) {
+    throw new ApiError( 500 ,error)  
+}
+ const updatedVideo= await Video.findById(videoId);
   return res
     .status(200)
-    .json(new ApiResponse(200, video, " successfully update the video"));
+    .json(new ApiResponse(200, updatedVideo, " successfully update the video"));
 });
 
 const deleteVideo = asyncHandler(async (req,res) => {
   const { videoId } = req.params;
-  const isDeleted = await Video.findByIdAndDelete(videoId);
+ try {
+   const isDeleted = await Video.findByIdAndDelete(videoId);
+ } catch (error) {
+   throw new ApiError(500,error)
+ }
   return res
     .status(200)
     .json(new ApiResponse(200, isDeleted, " Video deleted successfully "));

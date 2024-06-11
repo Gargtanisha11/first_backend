@@ -34,7 +34,28 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
       $match: {
         owner: new mongoose.Types.ObjectId(userId),
       },
+    
     },
+    {
+      $lookup:{
+        from:"users",
+        foreignField:"_id",
+        localField:"owner",
+        as:"owner"
+      }
+    }
+    ,{
+      $project:{
+        name:1,
+        description:1,
+        videos:1,
+        owner:{
+          userName:1,
+          fullName:1,
+          avatar:1
+        }
+      }
+    }
   ]);
 
   return res
@@ -45,11 +66,14 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 });
 
 const getPlaylistById = asyncHandler(async (req, res) => {
-  const { playlistId } = req.body;
+  const { playlistId } = req.params;
+  if(!isValidObjectId(playlistId)){
+    throw new ApiError(403, " not a valid playlist id")
+  }
   const playlist = await Playlist.aggregate([
     {
       $match: {
-        _id: playlistId,
+        _id: new mongoose.Types.ObjectId(playlistId),
       },
     },
   ]);
@@ -134,10 +158,10 @@ const deletePlaylist=asyncHandler(async(req,res)=>{
      throw new ApiError( 502, error)
   }
 
-    return res.status(200).json( new ApiResponse(200, isDeleted," successfully delete the playlist"))
+    return res.status(200).json( new ApiResponse(200, []," successfully delete the playlist"))
 })
 
-const updatePlaylist=asyncHandler(async(req,re)=>{
+const updatePlaylist=asyncHandler(async(req,res)=>{
    const {playlistId}= req.params;
    const {name,description} =req.body;
    if(!isValidObjectId(playlistId)){

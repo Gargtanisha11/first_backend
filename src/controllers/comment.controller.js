@@ -19,7 +19,7 @@ const addComment = asyncHandler(async (req, res) => {
   if ([content, videoId, owner].some((field) => field === "")) {
     throw new ApiError(402, "All field are required! ");
   }
- console.log(req.body);
+
  if(!isValidObjectId(videoId)){
   throw new ApiError(403," not the valid video Id");
  }
@@ -65,16 +65,14 @@ const getVideoComment = asyncHandler(async (req, res) => {
         from: "likes",
         localField: "_id",
         foreignField: "comment",
-        as: "likedby",
-        pipeline: [
-          {
-            $addFields: {
-              likes: {
-                $size: "$likedBy",
-              },
-            },
-          },
-        ],
+        as: "likedBy",
+      },
+    },
+    {
+      $addFields: {
+        likes: {
+          $size: "$likedBy",
+        },
       },
     },
     {
@@ -98,7 +96,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
           userName: 1,
           _id: 1,
         },
-        likes: { $ifNull: ["$likes", 0] },
+        likes:1,
       },
     },
   ]);

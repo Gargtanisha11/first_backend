@@ -13,6 +13,7 @@ const likeSchema=new Schema({
     likedBy:{
         type:Schema.Types.ObjectId,
         ref:"User",
+        require:true,
     },
     tweet:{
         type:Schema.Types.ObjectId,
@@ -20,4 +21,4 @@ const likeSchema=new Schema({
     }
 },{timestamps:true});
 
-export const LikedBy=  mongoose.model("LikedBy",likeSchema);
+export const Like=  mongoose.model("Like",likeSchema);

@@ -59,5 +59,6 @@ step 7 :
 
 
 # to do 
- solve the pagination problem in video controller 
- debugg the controller of user, comment and video
+
+  like controller 
+  after creating liked Controller again debugg the user PRofile controller from user.controller.js

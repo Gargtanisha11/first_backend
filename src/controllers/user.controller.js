@@ -68,7 +68,7 @@ const registerUser = asyncHandler(async (req, res) => {
     fs.unlinkSync(req.files?.coverImage[0]?.path);
     throw new ApiError(409, " User already existed ");
   }
-  console.log(req.files)
+  
   // multer give access for res.files
   const avatarLocalPath = req.files?.avatar[0]?.path;
     

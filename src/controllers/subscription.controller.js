@@ -20,7 +20,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(subsDoc);
+ 
   if (!subsDoc.length) {
     try {
       if (!(await User.findById(channelId))) {

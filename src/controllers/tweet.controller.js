@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const createTweet=asyncHandler(async(req,res)=>{
     const user= req.user;
      const {content} =req.body;
+     console.log(content);
     if(!content){
         throw new ApiError(403 , " content is required ");
     }
@@ -15,17 +16,19 @@ const createTweet=asyncHandler(async(req,res)=>{
         owner:user._id,
         content:content,
     })
-    if(!content.length){
+    console.log(tweet)
+    if(tweet==0){
         throw new ApiError(501," something went wrong while creating tweet");
     }
+    return res.status(200).json(new ApiResponse(200,tweet," successfully created tweet"))
 });
 
 const getUserTweet=asyncHandler(async(req,res)=>{
-    const user= req.user;
+    const {userId}= req.params;
     const tweets= await Tweet.aggregate([
         {
             $match:{
-                owner:new mongoose.Types.ObjectId(user._id)
+                owner:new mongoose.Types.ObjectId(userId)
             }
         },
         {
@@ -36,9 +39,8 @@ const getUserTweet=asyncHandler(async(req,res)=>{
             }
         }
     ]);
-    if(!tweets.length){
-        throw new ApiError(501,"not able to create tweet ")
-    }
+   
+    console.log(tweets);
     return res.status(200).json(new ApiResponse(200,tweets,"  user tweets"));
 });
 
@@ -57,7 +59,7 @@ const updateTweet =asyncHandler(async(req,res)=>{
         }
      });
 
-    if(!updatedTweet.length){
+    if(updatedTweet.length==0){
         throw new ApiError(401, " something went wrong ");
     }
 
@@ -70,7 +72,9 @@ const deleteTweet= asyncHandler(async(req,res)=>{
         throw new ApiError(400," tweet id should be valid ");
     }
     const isDeleted= await Tweet.findByIdAndDelete(tweetId);
-    if(!isDeleted.length){
+
+    console.log(isDeleted);
+    if(isDeleted.length==0){
         throw new ApiError(500," something went wrong ");
     }
     return res.status(200).json(new ApiResponse(200, isDeleted," deleted successfully your tweet"))

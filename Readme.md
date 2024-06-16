@@ -18,8 +18,7 @@
  - cookie parser(handle cookie),
  - multer(file handling from response),
 
-### step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string )
-     and connect with database 
+### step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string ) and connect with database 
  
 #### NOTE
   - two approach for connect db

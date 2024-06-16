@@ -105,6 +105,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   const videoFile = await uploadOnCloudinary(videoLocalPath);
+  console.log(videoFile.url);
   if (!videoFile.url) {
     throw new ApiError(
       501,
@@ -118,6 +119,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
       501,
       "Something went wrong while uploading the thumbnail file on cloudinary"
     );
+    await deleteFromCloudinary(videoFile.url);
   }
 
   const uploadedVideo = await Video.create({
@@ -128,11 +130,13 @@ const publishAVideo = asyncHandler(async (req, res) => {
     owner: req.user?._id,
     duration: videoFile?.duration,
     isPublished: true,
-    views: 0,
+    views: 1,
   });
 
   if (!uploadedVideo) {
     throw new ApiError(401, " something went wrong while publishing the video");
+    await deleteFromCloudinary(thumbnailFile.url);
+    await deleteFromCloudinary(videoFile.url);
   }
 
   return res

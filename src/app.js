@@ -38,7 +38,8 @@ import playlistRouter from "./routes/playlist.routes.js";
 import likeRouter from "./routes/like.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import tweetRouter from "./routes/tweet.routes.js";
-import dashboardRouter from "./routes/dashBoard.routes.js"
+import dashboardRouter from "./routes/dashBoard.routes.js";
+import healthCheckRouter  from "./routes/healthCheck.routes.js";
 
 // route declartion
 app.use("/api/v1/users",userRouter)// middleware to give control to userrouter when "users " url hits 
@@ -49,4 +50,7 @@ app.use("/api/v1/likes",likeRouter);
 app.use("/api/v1/subscriptions",subscriptionRouter);
 app.use("/api/v1/tweets",tweetRouter);
 app.use("/api/v1/dashboard",dashboardRouter);
+app.use("/api/v1/healthCheck",healthCheckRouter);
+
+
 export { app };

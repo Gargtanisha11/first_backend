@@ -1,15 +1,25 @@
-# backend series
+# backend project 
+  This is my first backend project which I learn from [chai aur code](https://www.youtube.com/playlist?list=PLu71SKxNbfoBGh_8p_NS-ZAh6v7HhYqHW)  youTube channel 
 
-# mongoDb
+
 step 1:- set mongo atlas 
 - create project 
 - connect database
 - network access 
 - database access
 
-step 2:- install moongoose express dotenv 
+step 2:- install 
+ - nodemon(automatically restart server after changes),
+ - moongoose(database connection ), 
+ - express(manage server and routes), 
+ - dotenv(handle env variable) , 
+ - jwt( for generate access token and refresh token  ), 
+ - bcrypt( for hashing the password and compare orignal password ), 
+ - cookie parser(handle cookie),
+ - multer(file handling from response),
 
 step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string )
+     and connect with database 
  
 # NOTE
   - two approach for connect db
@@ -21,44 +31,18 @@ step 3:- set env file ( PORT AND DATABASE CONNECT STRING - not / in string )
    Always use async and await because our code is present in other continent
 
 
-step 4 : cloudinary
+step 4 : cloudinary for storing  the files
 
-step 5 : user model , video model ,subscription model
+step 5 : user model , video model ,subscription model etc
 
-step 6 :controller for user - user register logic
-                            - user login logic 
-                            - user logout logic (before logout logic we need to create an middleware )
-                            - test this logics is correct or not 
-                               1. i pass whole intentionaly to check is it worked or not it show error
-                               2. forget to write await when fetch the data from mongo db 
-                               3. forget to write return in genrating the acess Token or refresh Token  
-                               4. password is not hashed in user model in registering time because i do typo error i write password instead of "password"
-                               5. logged in user even after wrong password because i don't use await when i call that function because bcrypt.compare function is asynchronous 
-                           - write the controller to handle end point when access token is expired 
-                           - write  the controller to changepassword ,getCurrentUser,updateAccountDetails,updateUserAvatar
+step 6 :controller for user ,video etc 
 
+step 7 :create the router for all endpoint in routes folder 
 
-step 7 : 
-
-
-# related to mongodbatlas 
-  if your password have special character in it then you have to change it using percent encoding 
-
-
-
-
-
-# Error
-- In postman i get an error for uploading two fields for file at a time -get resolve but don't able to know what the problem
-- when user already existed the files is not deleted from public - resolve by writing unLinkSync file in if condition of existed user 
-
-
-# Postman
+step 8 : add the route in app.js file
+ 
+# Postman ( debugging the controller)
 - create environment variable for add (localhost:8000/api/v1 ) in request 
 - create collection name as youtubebackend -> users(folder) -> register( post request) ( its benefits is that it enable us to group our all request together, share it , oranganize our request ,use in Api request )
 
 
-# to do 
-
-  like controller 
-  after creating liked Controller again debugg the user PRofile controller from user.controller.js
